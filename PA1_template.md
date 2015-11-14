@@ -1,9 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1 - By Shay (First Change)"
-output: 
-  html_document:
-    keep_md: true
----
+# Reproducible Research: Peer Assessment 1 - By Shay (First Change)
 
 
 ## Loading and preprocessing the data
