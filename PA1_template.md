@@ -1,7 +1,7 @@
-# Reproducible Research: Peer Assessment 1 - By Shay (First Change)
+# Reproducible Research: Peer Assessment 1 - By Shay
 
 
-## Loading libraries and preprocessing the data
+## Loading and preprocessing 
 
 ```r
 library(ggplot2)
@@ -15,7 +15,7 @@ library(ggplot2)
 data <- read.csv("./activity.csv")
 ```
 
-### change date column to Date type 
+#### change date column to Date type 
 
 ```r
 data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
@@ -71,12 +71,13 @@ NA_rows <- nrow(data) - nrow(data[complete.cases(data),])
 ```
 ####Number of rows with NAs is 2304.
 
-####Impute values for NAs using loess model based on interval time
+####Impute values for NAs using loess model based on interval time. Set negative predictions to zero.
 
 ```r
 Steps_Loess <- loess(steps ~ interval, span=.75, summary)
 LoessPredicted <- predict(Steps_Loess,summary)
 summary <- cbind(summary,LoessPredicted)
+summary$LoessPredicted[summary$LoessPredicted<=0] <- 0 
 ```
 
 #### Here is representation of the model. It has obvious flaws but will use it for illustration purposes.
@@ -122,6 +123,8 @@ imputed_median <- median(data_imputed$step,na.rm=TRUE)
 ## Are there differences in activity patterns between weekdays and weekends?
 
 
+#### Create an additional column with weekday then group as 'weekend' and 'weekday'
+
 ```r
 data_imputed$weekdays <- as.factor(weekdays(data_imputed$date))
 data_imputed$day_type <- data_imputed$weekdays
@@ -131,7 +134,7 @@ summary_imputed <- aggregate(data_imputed["steps"], by=data_imputed[c("day_type"
 ```
 
 
-#### Plot the summary as before
+#### Plot the summary as before split by weekend and weekday. Weekend has a later, gradual ramp up in steps. Peak is still roughly the same time but at a lower level.
 
 ```r
 ggplot(summary_imputed, aes(x=interval,y=steps, group=day_type)) +
