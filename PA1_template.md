@@ -1,14 +1,24 @@
 # Reproducible Research: Peer Assessment 1 - By Shay
 
 
-## Loading and preprocessing 
+## Loading packages and data 
 
 ```r
 library(ggplot2)
+library(dplyr)
 ```
 
 ```
-## Warning: package 'ggplot2' was built under R version 3.2.2
+## 
+## Attaching package: 'dplyr'
+## 
+## The following objects are masked from 'package:stats':
+## 
+##     filter, lag
+## 
+## The following objects are masked from 'package:base':
+## 
+##     intersect, setdiff, setequal, union
 ```
 
 ```r
@@ -23,32 +33,45 @@ data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
 
+#### aggregate steps by day
+
+
 ```r
-hist(data$steps)
+day_group <- group_by(data,date)
+data_byday <- summarize(day_group,
+                        steps = sum(steps)
+                        )
+```
+
+```r
+hist(data_byday$steps)
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
 
 ```r
-mean <- mean(data$steps,na.rm=TRUE)
-median <- median(data$step,na.rm=TRUE)
+mean <- mean(data_byday$steps,na.rm=TRUE)
+median <- median(data_byday$step,na.rm=TRUE)
 ```
 
-#### Mean is 37.3825996
-#### Median is 0
+#### Mean is 1.0766189\times 10^{4}
+#### Median is 10765
 
 ## What is the average daily activity pattern?
 
 #### Calculate the mean by interval ignoring NA's
 
 ```r
-summary <- aggregate(data["steps"], by=data[c("interval")], FUN=mean, na.rm=TRUE)
+interval_group <- group_by(data,interval)
+data_byinterval <- summarize(interval_group,
+                             AverageSteps = mean(steps, na.rm=TRUE)
+)
 ```
-
+                                                          
 #### Plot results
 
 ```r
-ggplot(summary, aes(x=interval,y=steps))+geom_line()
+ggplot(data_byinterval, aes(x=interval,y=AverageSteps))+geom_line()
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-5-1.png) 
@@ -56,8 +79,8 @@ ggplot(summary, aes(x=interval,y=steps))+geom_line()
 #### Select interval with highest average number of steps
 
 ```r
-summary <- summary[order(-summary$steps),]
-max_steps_time <- summary[1,]$interval
+data_byinterval <- data_byinterval[order(-data_byinterval$AverageSteps),]
+max_steps_time <- data_byinterval[1,]$interval
 ```
 #### Time witih highest number of steps is 835. Indicates people starting their day at 8:35AM and going to work.
 
@@ -74,18 +97,18 @@ NA_rows <- nrow(data) - nrow(data[complete.cases(data),])
 ####Impute values for NAs using loess model based on interval time. Set negative predictions to zero.
 
 ```r
-Steps_Loess <- loess(steps ~ interval, span=.75, summary)
-LoessPredicted <- predict(Steps_Loess,summary)
-summary <- cbind(summary,LoessPredicted)
-summary$LoessPredicted[summary$LoessPredicted<=0] <- 0 
+Steps_Loess <- loess(AverageSteps ~ interval, span=.75, data_byinterval)
+LoessPredicted <- predict(Steps_Loess,data_byinterval$interval)
+data_byinterval <- cbind(data_byinterval,LoessPredicted)
+data_byinterval$LoessPredicted[data_byinterval$LoessPredicted<=0] <- 0 
 ```
 
 #### Here is representation of the model. It has obvious flaws but will use it for illustration purposes.
 
 ```r
-ggplot(summary, aes(x=interval,y=steps)) + 
+ggplot(data_byinterval, aes(x=interval,y=AverageSteps)) + 
 geom_line(aes(interval,LoessPredicted)) +
-geom_line(aes(interval,steps))
+geom_line(aes(interval,AverageSteps))
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-9-1.png) 
@@ -94,31 +117,41 @@ geom_line(aes(interval,steps))
 
 ```r
 data_imputed <- data
-data_imputed$PredSteps <- predict(Steps_Loess,data_imputed$interval)
-data_imputed$steps[is.na(data_imputed$steps)] <- data_imputed$PredSteps
+
+# Merge by columns with different names
+data_imputed <- merge(data_imputed, data_byinterval[c('interval','LoessPredicted')], by.x = "interval", by.y = "interval")
+
+#data_imputed$PredSteps <- predict(Steps_Loess,data_imputed$interval)
+data_imputed$steps[is.na(data_imputed$steps)] <- data_imputed$LoessPredicted
 ```
 
 ```
 ## Warning in data_imputed$steps[is.na(data_imputed$steps)] <- data_imputed
-## $PredSteps: number of items to replace is not a multiple of replacement
-## length
+## $LoessPredicted: number of items to replace is not a multiple of
+## replacement length
 ```
 
 #### Create histogram, mean, and median with imputed data
 
 ```r
-hist(data_imputed$steps)
+day_group <- group_by(data_imputed,date)
+data_byday_imputed <- summarize(day_group,
+                        steps = sum(steps)
+                        )
+
+
+hist(data_byday_imputed$steps)
 ```
 
 ![](PA1_template_files/figure-html/unnamed-chunk-11-1.png) 
 
 ```r
-imputed_mean <- mean(data_imputed$steps,na.rm=TRUE)
-imputed_median <- median(data_imputed$step,na.rm=TRUE)
+imputed_mean <- mean(data_byday_imputed$steps,na.rm=TRUE)
+imputed_median <- median(data_byday_imputed$step,na.rm=TRUE)
 ```
 
-#### Mean is 37.3923696 compared to the original value of 37.3825996
-#### Median is 0. compared to the original value of 0
+#### Mean is 9468.1840354 compared to the original value of 1.0766189\times 10^{4}
+#### Median is 1.0395\times 10^{4}. compared to the original value of 10765
 
 ## Are there differences in activity patterns between weekdays and weekends?
 

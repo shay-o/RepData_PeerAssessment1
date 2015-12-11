@@ -6,23 +6,33 @@ output:
 ---
 
 
-## Loading and preprocessing 
-``` {r}
+## Loading packages and data 
+```{r, load_packages}
 library(ggplot2)
-
+library(dplyr)
 data <- read.csv("./activity.csv")
+
 ```
 
-#### change date column to Date type 
+#### Change date column to Date type 
 ``` {r}
 data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
 ```
 
 ## What is mean total number of steps taken per day?
+
+#### aggregate steps by day
+
 ``` {r}
-hist(data$steps)
-mean <- mean(data$steps,na.rm=TRUE)
-median <- median(data$step,na.rm=TRUE)
+day_group <- group_by(data,date)
+data_byday <- summarize(day_group,
+                        steps = sum(steps)
+                        )
+```
+``` {r}
+hist(data_byday$steps)
+mean <- mean(data_byday$steps,na.rm=TRUE)
+median <- median(data_byday$step,na.rm=TRUE)
 ```
 
 #### Mean is `r mean`
@@ -31,19 +41,22 @@ median <- median(data$step,na.rm=TRUE)
 ## What is the average daily activity pattern?
 
 #### Calculate the mean by interval ignoring NA's
-``` {r echo=TRUE}
-summary <- aggregate(data["steps"], by=data[c("interval")], FUN=mean, na.rm=TRUE)
-```
-
-#### Plot results
 ``` {r}
-ggplot(summary, aes(x=interval,y=steps))+geom_line()
+interval_group <- group_by(data,interval)
+data_byinterval <- summarize(interval_group,
+                             AverageSteps = mean(steps, na.rm=TRUE)
+)
+```
+                                                          
+#### Plot results
+```{r}
+ggplot(data_byinterval, aes(x=interval,y=AverageSteps))+geom_line()
 ```
 
 #### Select interval with highest average number of steps
 ``` {r}
-summary <- summary[order(-summary$steps),]
-max_steps_time <- summary[1,]$interval
+data_byinterval <- data_byinterval[order(-data_byinterval$AverageSteps),]
+max_steps_time <- data_byinterval[1,]$interval
 ```
 #### Time witih highest number of steps is `r max_steps_time`. Indicates people starting their day at 8:35AM and going to work.
 
@@ -58,31 +71,41 @@ NA_rows <- nrow(data) - nrow(data[complete.cases(data),])
 
 ####Impute values for NAs using loess model based on interval time. Set negative predictions to zero.
 ``` {r}
-Steps_Loess <- loess(steps ~ interval, span=.75, summary)
-LoessPredicted <- predict(Steps_Loess,summary)
-summary <- cbind(summary,LoessPredicted)
-summary$LoessPredicted[summary$LoessPredicted<=0] <- 0 
+Steps_Loess <- loess(AverageSteps ~ interval, span=.75, data_byinterval)
+LoessPredicted <- predict(Steps_Loess,data_byinterval$interval)
+data_byinterval <- cbind(data_byinterval,LoessPredicted)
+data_byinterval$LoessPredicted[data_byinterval$LoessPredicted<=0] <- 0 
 ```
 
 #### Here is representation of the model. It has obvious flaws but will use it for illustration purposes.
 ``` {r}
-ggplot(summary, aes(x=interval,y=steps)) + 
+ggplot(data_byinterval, aes(x=interval,y=AverageSteps)) + 
 geom_line(aes(interval,LoessPredicted)) +
-geom_line(aes(interval,steps))
+geom_line(aes(interval,AverageSteps))
 ```
 
 #### Create a seperate data set and impute NAs with loess model above.
 ``` {r}
 data_imputed <- data
-data_imputed$PredSteps <- predict(Steps_Loess,data_imputed$interval)
-data_imputed$steps[is.na(data_imputed$steps)] <- data_imputed$PredSteps
+
+# Merge by columns with different names
+data_imputed <- merge(data_imputed, data_byinterval[c('interval','LoessPredicted')], by.x = "interval", by.y = "interval")
+
+#data_imputed$PredSteps <- predict(Steps_Loess,data_imputed$interval)
+data_imputed$steps[is.na(data_imputed$steps)] <- data_imputed$LoessPredicted
 ```
 
 #### Create histogram, mean, and median with imputed data
 ``` {r}
-hist(data_imputed$steps)
-imputed_mean <- mean(data_imputed$steps,na.rm=TRUE)
-imputed_median <- median(data_imputed$step,na.rm=TRUE)
+day_group <- group_by(data_imputed,date)
+data_byday_imputed <- summarize(day_group,
+                        steps = sum(steps)
+                        )
+
+
+hist(data_byday_imputed$steps)
+imputed_mean <- mean(data_byday_imputed$steps,na.rm=TRUE)
+imputed_median <- median(data_byday_imputed$step,na.rm=TRUE)
 ```
 
 #### Mean is `r imputed_mean` compared to the original value of `r mean`
