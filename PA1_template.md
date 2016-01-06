@@ -1,4 +1,4 @@
-# Reproducible Research: Peer Assessment 1 - By Shay
+# Reproducible Research: Peer Assessment 1 - By ShayO
 
 
 ## Loading packages and data 
@@ -25,7 +25,7 @@ library(dplyr)
 data <- read.csv("./activity.csv")
 ```
 
-#### change date column to Date type 
+#### Change date column to Date type 
 
 ```r
 data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
@@ -33,7 +33,7 @@ data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
 
-#### aggregate steps by day
+#### Aggregate steps by day
 
 
 ```r
@@ -50,12 +50,12 @@ hist(data_byday$steps)
 ![](PA1_template_files/figure-html/unnamed-chunk-3-1.png) 
 
 ```r
-mean <- mean(data_byday$steps,na.rm=TRUE)
-median <- median(data_byday$step,na.rm=TRUE)
+meansteps <- mean(data_byday$steps,na.rm=TRUE)
+mediansteps <- median(data_byday$step,na.rm=TRUE)
 ```
 
-#### Mean is 1.0766189\times 10^{4}
-#### Median is 10765
+#### Mean is 10,766.19
+#### Median is 10,765
 
 ## What is the average daily activity pattern?
 
@@ -92,7 +92,7 @@ max_steps_time <- data_byinterval[1,]$interval
 ```r
 NA_rows <- nrow(data) - nrow(data[complete.cases(data),]) 
 ```
-####Number of rows with NAs is 2304.
+####Number of rows with NAs is 2,304.
 
 ####Impute values for NAs using loess model based on interval time. Set negative predictions to zero.
 
@@ -150,8 +150,8 @@ imputed_mean <- mean(data_byday_imputed$steps,na.rm=TRUE)
 imputed_median <- median(data_byday_imputed$step,na.rm=TRUE)
 ```
 
-#### Mean is 9468.1840354 compared to the original value of 1.0766189\times 10^{4}
-#### Median is 1.0395\times 10^{4}. compared to the original value of 10765
+#### Mean is 9,468` compared to the original value of 10,766
+#### Median is 10,395. compared to the original value of 10,765
 
 ## Are there differences in activity patterns between weekdays and weekends?
 

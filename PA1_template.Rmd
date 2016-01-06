@@ -1,5 +1,5 @@
 ---
-title: "Reproducible Research: Peer Assessment 1 - By Shay"
+title: "Reproducible Research: Peer Assessment 1 - By ShayO"
 output: 
   html_document:
     keep_md: true
@@ -21,7 +21,7 @@ data$date <- as.Date(as.character(data$date), "%Y-%m-%d")
 
 ## What is mean total number of steps taken per day?
 
-#### aggregate steps by day
+#### Aggregate steps by day
 
 ``` {r}
 day_group <- group_by(data,date)
@@ -31,12 +31,12 @@ data_byday <- summarize(day_group,
 ```
 ``` {r}
 hist(data_byday$steps)
-mean <- mean(data_byday$steps,na.rm=TRUE)
-median <- median(data_byday$step,na.rm=TRUE)
+meansteps <- mean(data_byday$steps,na.rm=TRUE)
+mediansteps <- median(data_byday$step,na.rm=TRUE)
 ```
 
-#### Mean is `r mean`
-#### Median is `r median`
+#### Mean is `r format(meansteps,big.mark = ",", scientific=FALSE)`
+#### Median is `r format(mediansteps,big.mark = ",", scientific=FALSE)`
 
 ## What is the average daily activity pattern?
 
@@ -67,7 +67,7 @@ max_steps_time <- data_byinterval[1,]$interval
 ``` {r}
 NA_rows <- nrow(data) - nrow(data[complete.cases(data),]) 
 ```
-####Number of rows with NAs is `r NA_rows`.
+####Number of rows with NAs is `r format(NA_rows,scientific=FALSE,big.mark=",")`.
 
 ####Impute values for NAs using loess model based on interval time. Set negative predictions to zero.
 ``` {r}
@@ -108,8 +108,8 @@ imputed_mean <- mean(data_byday_imputed$steps,na.rm=TRUE)
 imputed_median <- median(data_byday_imputed$step,na.rm=TRUE)
 ```
 
-#### Mean is `r imputed_mean` compared to the original value of `r mean`
-#### Median is `r imputed_median`. compared to the original value of `r median`
+#### Mean is `r format(imputed_mean,scientific=FALSE,big.mark=",",digits=1)`. compared to the original value of `r format(meansteps,scientific=FALSE,big.mark=",",digits=1)`
+#### Median is `r format(imputed_median,scientific=FALSE,big.mark=",",digits=1)`. compared to the original value of `r format(mediansteps,scientific=FALSE,big.mark=",",digits=1)`
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
